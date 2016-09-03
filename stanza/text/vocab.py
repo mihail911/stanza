@@ -313,6 +313,37 @@ class EmbeddedVocab(Vocab):
             if word not in filled_words:
                 E[i] = unk_emb
 
+    def _sim_query(self, word_embed, num):
+        """
+        Computes cosine distance between 'word_embed' and all entries of 'E', returning
+        'num' most similar entries
+        :return:
+        """
+        dist = np.dot(self.E, word_embed) / (np.linalg.norm(self.E, axis=1) *
+                                        np.linalg.norm(word_embed))
+        closest = np.argsort(-1 * dist)
+
+        return [(self.index2word(idx), dist[idx]) for idx in closest[:num]]
+
+
+    def most_similar(self, word, num=5):
+        """
+        Get the most similar 'num' words to 'word' according to cosine similarity.
+        Exception raised if 'word' is not in vocab.
+
+        :param E: embedding matrix
+        :param word: word to get most similar entries to
+        :param num: number of most similar entries to get
+        :return:
+        """
+        if word not in self:
+            raise ValueError('{0} not in current vocabulary'.format(word))
+
+        word_idx = self.word2index(word)
+        word_embed = self.E[word_idx]
+
+        return self._sim_query(word_embed, num)
+
 
 class SennaVocab(EmbeddedVocab):
     """
@@ -434,33 +465,3 @@ class GloveVocab(EmbeddedVocab):
             return E
 
 
-    def _sim_query(self, word_embed, num):
-        """
-        Computes cosine distance between 'word_embed' and all entries of 'E', returning
-        'num' most similar entries
-        :return:
-        """
-        dist = np.dot(self.E, word_embed) / (np.linalg.norm(self.E, axis=1) *
-                                        np.linalg.norm(word_embed))
-        closest = np.argsort(-1 * dist)
-
-        return [(self.index2word(idx), dist[idx]) for idx in closest[:num]]
-
-
-    def most_similar(self, word, num=5):
-        """
-        Get the most similar 'num' words to 'word' according to cosine similarity.
-        Exception raised if 'word' is not in vocab.
-
-        :param E: embedding matrix
-        :param word: word to get most similar entries to
-        :param num: number of most similar entries to get
-        :return:
-        """
-        if word not in self:
-            raise ValueError('{0} not in current vocabulary'.format(word))
-
-        word_idx = self.word2index(word)
-        word_embed = self.E[word_idx]
-
-        return self._sim_query(word_embed, num)
